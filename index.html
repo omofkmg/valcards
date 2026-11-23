@@ -400,8 +400,8 @@ body[data-view="team"] #vrow,body[data-view="team"] #frow{display:none}
 .links .l-region{stroke:#6f7b88;stroke-width:2;stroke-dasharray:3 7}
 .links circle{fill:#0a0f14;stroke:#ece8e1;stroke-width:2}
 .slot{position:relative;grid-column:span 2;display:flex;flex-direction:column;align-items:center;min-width:0}
-.slot.s-INIT{grid-column:1 / span 2;grid-row:1}.slot.s-DUEL{grid-column:3 / span 2;grid-row:1}.slot.s-FLEX{grid-column:5 / span 2;grid-row:1}
-.slot.s-CTRL{grid-column:1 / span 2;grid-row:2}.slot.s-SENTI{grid-column:3 / span 2;grid-row:2}.slot.s-COACH{grid-column:5 / span 2;grid-row:2}
+.slot.s-DUEL{grid-column:1 / span 2;grid-row:1}.slot.s-FLEX{grid-column:3 / span 2;grid-row:1}.slot.s-INIT{grid-column:5 / span 2;grid-row:1}
+.slot.s-SENTI{grid-column:1 / span 2;grid-row:2}.slot.s-CTRL{grid-column:3 / span 2;grid-row:2}.slot.s-COACH{grid-column:5 / span 2;grid-row:2}
 .slot .card{max-width:230px}
 .s-lab{display:flex;align-items:baseline;justify-content:space-between;width:100%;max-width:230px;font-family:var(--cond);margin-bottom:6px;background:var(--ink);padding:1px 6px;position:relative}
 .s-lab b{font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.03em}
@@ -451,11 +451,11 @@ dialog.pick{width:min(520px,calc(100vw - 20px))}
 @media (max-width:640px){
   .form{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 12px;padding:14px 10px}
   .slot.s-DUEL{grid-column:1 / span 2;grid-row:1}
-  .slot.s-COACH{grid-column:3 / span 2;grid-row:1}
+  .slot.s-FLEX{grid-column:3 / span 2;grid-row:1}
   .slot.s-INIT{grid-column:1 / span 2;grid-row:2}
-  .slot.s-FLEX{grid-column:3 / span 2;grid-row:2}
+  .slot.s-SENTI{grid-column:3 / span 2;grid-row:2}
   .slot.s-CTRL{grid-column:1 / span 2;grid-row:3}
-  .slot.s-SENTI{grid-column:3 / span 2;grid-row:3}
+  .slot.s-COACH{grid-column:3 / span 2;grid-row:3}
   .s-act button{padding:5px 7px;font-size:13.5px}
   .tb-rate b{font-size:76px}
   .p-row{grid-template-columns:34px 22px minmax(0,1fr) 46px 44px;}
@@ -1187,7 +1187,7 @@ function rankHTML(s27){
     <div class="rk-ctl">
       <span class="ctl-l">Sort by</span>${seg("by", RANK_BY, "Sort by")}
       <button type="button" class="tbtn" data-rk="asc" aria-pressed="${rk.asc}" title="Flip the order">${rk.asc ? "Lowest first" : "Highest first"}</button>
-      <span class="ctl-l">Role</span>${seg("role", ["All","DUEL","INIT","CTRL","SENTI","FLEX"].map(x => [x, x]), "Role")}
+      <span class="ctl-l">Role</span>${seg("role", ["All","DUEL","FLEX","INIT","SENTI","CTRL"].map(x => [x, x]), "Role")}
       <span class="ctl-l">Region</span>${seg("region", ["All"].concat(REGIONS).map(x => [x, x]), "Region")}
     </div>
     ${pool.length ? pg + `<div class="grid">${pool.slice(start, start + 30).map((c, i) => `<div class="rk"><div class="rk-n"><b>#${start + i + 1}</b><span>${esc(lab)} ${fmt(rankVal(c, rk.by))}</span></div>${cardHTML(c)}</div>`).join("")}</div>` + pg
@@ -1378,6 +1378,8 @@ $("#seasons").addEventListener("click", e => {
 
 /* ---------- my team ---------- */
 const SLOTS = ["DUEL","INIT","CTRL","SENTI","FLEX"], ALLSLOTS = SLOTS.concat("COACH");
+/* display order only; ALLSLOTS order stays fixed so old share codes still load */
+const VIEWSLOTS = ["DUEL","FLEX","INIT","SENTI","CTRL","COACH"];
 const SLOT_NAME = {DUEL:"duelist", INIT:"initiator", CTRL:"controller", SENTI:"sentinel", FLEX:"flex", COACH:"head coach"};
 const SQ_KEY = "vctcards.squads27";   /* the old 2026 builder used vctcards.squads; those squads are not carried over */
 const blankSquad = i => ({name: "Squad " + (i + 1), slots: {}, igl: null});
@@ -1447,7 +1449,7 @@ function renderTeam(){
       <button type="button" class="tbtn" data-tb="load">Load code</button>
     </div>
     <div class="tb-body">
-      <div class="form" id="form"><svg class="links" id="links" aria-hidden="true"></svg>${ALLSLOTS.map(slotHTML).join("")}</div>
+      <div class="form" id="form"><svg class="links" id="links" aria-hidden="true"></svg>${VIEWSLOTS.map(slotHTML).join("")}</div>
       <aside class="tb-sum" aria-live="polite">
         <div class="tb-rate"><b${st.n ? "" : ' class="none"'}>${st.n ? st.rating.toFixed(1) : "No picks yet"}</b><span>Team rating${st.n < 5 ? `, ${st.n} of 5 picked` : ""}</span></div>
         <dl>
