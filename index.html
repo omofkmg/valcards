@@ -275,20 +275,20 @@ body[data-season="2027"] #droplab,body[data-season="2027"] #views [data-view="ev
 .vlr b{background:rgba(8,10,14,.82);color:#ece8e1;font-weight:800;font-size:5.4cqw;padding:1.1cqw 1.8cqw 1cqw;font-variant-numeric:tabular-nums}
 .vlr em{background:rgba(8,10,14,.82);color:rgba(236,232,225,.7);font-style:normal;font-size:3.5cqw;padding:0 2cqw 0 0;display:flex;align-items:center}
 
-.lower{position:absolute;left:0;right:0;top:56.5%;bottom:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;text-align:center}
+.lower{position:absolute;left:0;right:0;top:54.5%;bottom:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;text-align:center}
 .ribbon{font-family:var(--cond);font-weight:800;font-size:max(3.75cqw,8px);line-height:1;letter-spacing:.13em;text-transform:uppercase;padding:1.5cqw 5cqw 1.3cqw;background:var(--c-accent);color:var(--chip-ink,#fff);
   clip-path:polygon(2.4cqw 0,100% 0,calc(100% - 2.4cqw) 100%,0 100%);white-space:nowrap;min-height:6.6cqw}
 .ribbon:empty{visibility:hidden}
 .ribbon.quiet{background:none;color:var(--c-ink);box-shadow:inset 0 0 0 1px var(--c-rule);clip-path:none;font-size:max(3.4cqw,7.5px);letter-spacing:.11em;backdrop-filter:blur(2px)}
 .ign{font-family:var(--display);font-weight:900;font-size:13cqw;line-height:.95;margin-top:1.6cqw;letter-spacing:.005em;text-transform:uppercase;white-space:nowrap;max-width:94cqw}
 .ign.long{font-size:10.6cqw;line-height:1.165}
-.meta{display:flex;align-items:center;justify-content:center;gap:2.2cqw;max-width:92cqw;white-space:nowrap;font-family:var(--cond);font-size:max(4.5cqw,9px);line-height:1;margin-top:1cqw;color:var(--c-sub);pointer-events:auto}
+.meta{display:flex;align-items:center;justify-content:center;gap:2.2cqw;max-width:92cqw;white-space:nowrap;font-family:var(--cond);font-size:4.5cqw;line-height:1;margin-top:1cqw;color:var(--c-sub);pointer-events:auto}
 .meta .tag{font-weight:800;color:var(--c-ink);letter-spacing:.04em}
 .flag{display:inline-block;width:6.9cqw;height:4.9cqw;background:#9aa0a8 center/cover no-repeat;box-shadow:0 0 0 1px var(--c-rule),0 0 0 .5px rgba(0,0,0,.35);flex:none}
 .flag.none{background:repeating-linear-gradient(135deg,rgba(128,128,128,.55) 0 2px,rgba(128,128,128,.25) 2px 4px)}
-.attrs{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(3,auto);margin-top:2.6cqw;padding-top:2.2cqw;border-top:1px solid var(--c-rule);width:80%;position:relative;pointer-events:auto}
-.attrs::before{content:"";position:absolute;left:50%;top:2.6cqw;bottom:.6cqw;border-left:1px solid var(--c-rule)}
-.tag img.lg{display:block;height:max(7.6cqw,13px);max-height:18px;width:auto;max-width:15cqw;object-fit:contain}
+.attrs{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(3,auto);margin-top:1.8cqw;padding-top:1.6cqw;border-top:1px solid var(--c-rule);width:80%;position:relative;pointer-events:auto}
+.attrs::before{content:"";position:absolute;left:50%;top:1.8cqw;bottom:.6cqw;border-left:1px solid var(--c-rule)}
+.tag img.lg{display:block;height:6.4cqw;max-height:18px;width:auto;max-width:15cqw;object-fit:contain}
 .p-row .p-t img.lg{height:16px;max-width:40px}
 .t-logo{align-self:center;display:inline-flex}
 .t-logo:empty{display:none}
@@ -315,9 +315,13 @@ body.is-owner .lg-ctl{display:inline-flex}
 .rank[data-by="FIRE"] .attrs [data-k="FIRE"],.rank[data-by="ENTRY"] .attrs [data-k="ENTRY"],.rank[data-by="IMPACT"] .attrs [data-k="IMPACT"],.rank[data-by="CLUTCH"] .attrs [data-k="CLUTCH"],.rank[data-by="UTIL"] .attrs [data-k="UTIL"],.rank[data-by="CONSIST"] .attrs [data-k="CONSIST"]{background:var(--c-ink);--c-sub:var(--vlr-bg,#fff);color:var(--vlr-bg,#fff)}
 .rank[data-by="vlr"] .vlr b{background:var(--crimson);color:#fff}
 .rank[data-by="ovr"] .ovr{color:inherit}
-.attrs div{display:grid;grid-template-columns:1fr 10.5cqw;align-items:baseline;column-gap:1.6cqw;line-height:1.14;padding:0 3.2cqw 0 3.6cqw}
+.attrs div{display:grid;align-items:baseline;column-gap:1.8cqw;line-height:1.1}
+.attrs div:nth-child(-n+3){grid-template-columns:1fr auto;padding-right:3.4cqw}
+.attrs div:nth-child(-n+3) span{text-align:right}
+.attrs div:nth-child(n+4){grid-template-columns:auto 1fr;padding-left:3.4cqw}
+.attrs div:nth-child(n+4) b{text-align:left}
 .attrs b{font-family:var(--display);font-weight:900;font-size:7.2cqw;font-variant-numeric:tabular-nums;text-align:right}
-.attrs span{font-family:var(--cond);font-weight:700;font-size:max(4.55cqw,8.5px);letter-spacing:.04em;text-align:left;color:var(--c-sub)}
+.attrs span{font-family:var(--cond);font-weight:700;font-size:4.55cqw;letter-spacing:.04em;text-align:left;color:var(--c-sub)}
 .turn{margin-top:auto;margin-bottom:2.2cqw;width:4.4cqw;height:4.4cqw;opacity:.55;color:var(--c-ink)}
 
 /* ---------- dialog ---------- */
@@ -1069,7 +1073,7 @@ function faceHTML(c, interactive){
       <div class="ribbon${c.label && !c.historical ? "" : " quiet"}">${esc((c.historical ? "" : c.label) || winnerLabel(c))}</div>
       <div class="ign${c.ign.length > 9 ? " long" : ""}">${esc(c.ign)}</div>
       <div class="meta">${tagHTML(c)}${flag(c.nat)}<span>${esc(c.role)}</span></div>
-      <div class="attrs">${ATTRS.map(([k, tip]) => `<div data-k="${k}" title="${tip}"><span>${k}</span><b>${esc(a[k])}</b></div>`).join("")}</div>
+      <div class="attrs">${ATTRS.map(([k, tip], i) => i < 3 ? `<div data-k="${k}" title="${tip}"><span>${k}</span><b>${esc(a[k])}</b></div>` : `<div data-k="${k}" title="${tip}"><b>${esc(a[k])}</b><span>${k}</span></div>`).join("")}</div>
       ${TURN}
     </div>
   </div></div>`;
