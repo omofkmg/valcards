@@ -765,6 +765,9 @@ function teamGrids(t){
   const tail = t.coach ? rest.concat(t.coach) : rest;
   return sp.length && tail.length ? gridHTML(sp) + gridHTML(tail) : gridHTML(t.coach ? t.cards.concat(t.coach) : t.cards);
 }
+const ROLE_ORD = {DUEL: 0, FLEX: 1, INIT: 2, SENTI: 3, CTRL: 4};
+const roleSort = (a, b) => (a.dropped ? 1 : 0) - (b.dropped ? 1 : 0) || (ROLE_ORD[a.pos] ?? 5) - (ROLE_ORD[b.pos] ?? 5) || (b.ovr || 0) - (a.ovr || 0) || a.ign.localeCompare(b.ign);
+const teamSort = (a, b) => (a._sp ? SPECIAL[a.tier] : 9) - (b._sp ? SPECIAL[b.tier] : 9) || roleSort(a, b);
 const cardSort = (a, b) => (a._sp ? SPECIAL[a.tier] : 9) - (b._sp ? SPECIAL[b.tier] : 9) || b.ovr - a.ovr || b.vlr - a.vlr || a.ign.localeCompare(b.ign);
 const ovrSort = (a, b) => (b.ovr || 0) - (a.ovr || 0) || (b.vlr || 0) - (a.vlr || 0) || a.ign.localeCompare(b.ign);
 Object.values(TEAMS).forEach(t => {
@@ -1125,7 +1128,7 @@ function regionTeams(r){
     .map(t => ({
       tag: t.tag,
       head: `${headLogo(t.tag)}<h3>${esc(t.name)}</h3><span class="tg">${esc(t.tag)}</span>${logoCtl(t.tag)}${r === "All" ? `<span class="rg">${esc(t.region)}</span>` : ""}${resultsHTML(t)}`,
-      cards: CARDS.filter(c => c.team === t.tag && match(c)).sort(cardSort), coach: coachOf(t.tag, false)
+      cards: CARDS.filter(c => c.team === t.tag && match(c)).sort(teamSort), coach: coachOf(t.tag, false)
     })).filter(t => t.cards.length);
 }
 function teams27(r){
@@ -1133,7 +1136,7 @@ function teams27(r){
   return T27.map((t, i) => ({t, i})).filter(x => r === "All" || x.t.region === r)
     .sort((a, b) => REGIONS.indexOf(a.t.region) - REGIONS.indexOf(b.t.region) || cls(a.t) - cls(b.t) || a.i - b.i)
     .map(({t}) => {
-      const cards = (t.cards || []).map(id => cardById.get(id)).filter(Boolean), k = cls(t);
+      const cards = (t.cards || []).map(id => cardById.get(id)).filter(Boolean).sort(roleSort), k = cls(t);
       return {
         tag: t.tag, name: t.name,
         head: `${headLogo(t.tag)}<h3>${esc(t.name)}</h3><span class="tg">${esc(t.tag)}</span>${logoCtl(t.tag)}<span class="bd b${k}">${k === 0 ? "Partner" : k === 1 ? "Visitor" : "Non-partner"}</span>${r === "All" ? `<span class="rg">${esc(t.region)}</span>` : ""}${cards.length < 5 ? `<span class="rg known">${cards.length} of 5 known</span>` : ""}`,
@@ -1155,7 +1158,7 @@ function eventTeams(ev){
       return {
         tag: t.tag,
         head: `<span class="pl${r === 1 ? " first" : ""}">${esc(placeTxt(p))}</span>${headLogo(t.tag)}<h3>${esc(t.name)}</h3><span class="tg">${esc(t.tag)}</span>${logoCtl(t.tag)}<span class="rg">${esc(t.region)}</span>`,
-        cards: [...byPid.values()].filter(match).sort(cardSort), coach: coachOf(t.tag, false)
+        cards: [...byPid.values()].filter(match).sort(teamSort), coach: coachOf(t.tag, false)
       };
     }).filter(t => t.cards.length);
 }
