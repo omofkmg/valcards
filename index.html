@@ -315,7 +315,7 @@ body.is-owner .lg-ctl{display:inline-flex}
 .rank[data-by="FIRE"] .attrs [data-k="FIRE"],.rank[data-by="ENTRY"] .attrs [data-k="ENTRY"],.rank[data-by="IMPACT"] .attrs [data-k="IMPACT"],.rank[data-by="CLUTCH"] .attrs [data-k="CLUTCH"],.rank[data-by="UTIL"] .attrs [data-k="UTIL"],.rank[data-by="CONSIST"] .attrs [data-k="CONSIST"]{background:var(--c-ink);--c-sub:var(--vlr-bg,#fff);color:var(--vlr-bg,#fff)}
 .rank[data-by="vlr"] .vlr b{background:var(--crimson);color:#fff}
 .rank[data-by="ovr"] .ovr{color:inherit}
-.attrs div{display:grid;grid-template-columns:10.5cqw 1fr;align-items:baseline;column-gap:2cqw;line-height:1.14;padding-left:2.6cqw}
+.attrs div{display:grid;grid-template-columns:1fr 10.5cqw;align-items:baseline;column-gap:1.6cqw;line-height:1.14;padding:0 3.2cqw 0 3.6cqw}
 .attrs b{font-family:var(--display);font-weight:900;font-size:7.2cqw;font-variant-numeric:tabular-nums;text-align:right}
 .attrs span{font-family:var(--cond);font-weight:700;font-size:max(4.55cqw,8.5px);letter-spacing:.04em;text-align:left;color:var(--c-sub)}
 .turn{margin-top:auto;margin-bottom:2.2cqw;width:4.4cqw;height:4.4cqw;opacity:.55;color:var(--c-ink)}
@@ -1069,7 +1069,7 @@ function faceHTML(c, interactive){
       <div class="ribbon${c.label && !c.historical ? "" : " quiet"}">${esc((c.historical ? "" : c.label) || winnerLabel(c))}</div>
       <div class="ign${c.ign.length > 9 ? " long" : ""}">${esc(c.ign)}</div>
       <div class="meta">${tagHTML(c)}${flag(c.nat)}<span>${esc(c.role)}</span></div>
-      <div class="attrs">${ATTRS.map(([k, tip]) => `<div data-k="${k}" title="${tip}"><b>${esc(a[k])}</b><span>${k}</span></div>`).join("")}</div>
+      <div class="attrs">${ATTRS.map(([k, tip]) => `<div data-k="${k}" title="${tip}"><span>${k}</span><b>${esc(a[k])}</b></div>`).join("")}</div>
       ${TURN}
     </div>
   </div></div>`;
