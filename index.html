@@ -73,6 +73,11 @@ details.how[open] summary::before{transform:rotate(45deg)}
 .weights{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px;padding:0;list-style:none}
 .weights li{border:1px solid var(--line);padding:2px 9px;font-family:var(--cond);font-size:15px}
 .weights b{color:var(--crimson);margin-left:6px}
+.how-body pre.f{margin:4px 0 8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid var(--crimson);font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--bone);white-space:pre-wrap;overflow-x:auto}
+.how-body table.ft{border-collapse:collapse;margin:4px 0 8px;font-size:13.5px;font-variant-numeric:tabular-nums}
+.how-body table.ft th,.how-body table.ft td{padding:2px 7px;border-bottom:1px solid var(--line);text-align:left}
+.how-body table.ft th{font-family:var(--cond);color:var(--bone);font-weight:800}
+.how-body table.ft td:first-child{font-family:var(--cond);font-weight:800;color:var(--bone)}
 
 /* ---------- jump nav ---------- */
 .jump{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:6px 16px;margin:0 calc(-1 * clamp(14px,3.4vw,44px)) 8px;padding:9px clamp(14px,3.4vw,44px);
@@ -619,49 +624,64 @@ footer.note{margin-top:54px;color:var(--dim);font-size:14px;max-width:80ch}
     <summary>How ratings work</summary>
     <div class="how-body">
       <div>
-        <h3>Overall</h3>
-        <p>OVR is 85% the player's own role-relative performance (plus IGL credit) and 15% team results. It sits on a fixed scale: the average VCT player is 77, and one standard deviation is 8 points. Between 60 and 94 the scale is a straight line. Past either end it bends into an S, so each extra point adds less: regular cards can't go past 98 or much below 56, and only MVP and winner cards reach 99. No rating is hand-tuned.</p>
-        <p>Role-relative means each player is compared to others in the same role, across about 220 VCT players. On top of that, kill output (K/D and kills per round) counts a little against every player in the pool, whatever their role, so a player who gets kills gets some credit for it. Small samples are pulled toward average.</p>
+        <h3>OVR</h3>
+        <pre class="f">Perf   = 0.7·attrs + 0.3·(70 + 100·(R−1))
+RoleZ  = (Perf − role avg) ÷ role SD
+k      = rounds ÷ (rounds + 250)
+Player = (RoleZ + 0.25·FireZ + IGL)·k
+C      = 0.85·Player + 0.15·TeamZ
+OVR    = 77 + 8·(C − avg) ÷ SD</pre>
+        <p>Curve: straight from 60 to 94. Above 94: 94 + 4.45·tanh((x − 94) ÷ 4.45), max <b>98</b>. Mirrored below 60. No hand-tuning.</p>
+        <h3>Role weights (attrs in Perf)</h3>
+        <table class="ft">
+          <tr><th></th><th>FIRE</th><th>ENTRY</th><th>IMPACT</th><th>CLUTCH</th><th>UTIL</th><th>CONSIST</th></tr>
+          <tr><td>DUEL</td><td>.30</td><td>.30</td><td>.20</td><td>.05</td><td>.03</td><td>.12</td></tr>
+          <tr><td>INIT</td><td>.15</td><td>.05</td><td>.15</td><td>.10</td><td>.35</td><td>.20</td></tr>
+          <tr><td>CTRL</td><td>.15</td><td>.03</td><td>.15</td><td>.12</td><td>.35</td><td>.20</td></tr>
+          <tr><td>SENTI</td><td>.30</td><td>.10</td><td>.20</td><td>.15</td><td>.10</td><td>.15</td></tr>
+          <tr><td>FLEX</td><td>.22</td><td>.15</td><td>.18</td><td>.10</td><td>.15</td><td>.20</td></tr>
+        </table>
+        <p>FireZ = FIRE vs all ~220 players (any role). IGL = 0.1 + 0.15 × team overperformance, clamped to 0.1–0.4 (≈ +1 to +3 OVR).</p>
         <h3>Roles</h3>
-        <p>Roles come from agent usage across the year: 60% or more on one role gives that role, otherwise FLEX. A few roles were corrected by hand where the usage misleads (Neon FLEX, Sato and spike DUEL, kiNgg and erde CTRL).</p>
-        <p>Viper counts as a Sentinel. Chamber is split half Duelist, half Sentinel, since duelist-style Operator players run him.</p>
-        <p>Ratings compare each player to others in the same role.</p>
-        <h3>Team results</h3>
-        <ul class="weights"><li>Kickoff<b>1</b></li><li>Santiago<b>3</b></li><li>Stage 1<b>1.5</b></li><li>London<b>3.5</b></li><li>Stage 2<b>2</b></li><li>Shanghai<b>4</b></li></ul>
-        <p>Placements are weighted by event, and London counts a little more than Santiago because it is later. Stats use the same weights, multiplied by rounds played. Missing an international event counts against a team.</p>
-        <h3>Region strength</h3>
-        <p>Regional-league stats (Kickoff, Stage 1, Stage 2) are discounted by region, based on how much each region's players' ratings dropped at internationals this year: Americas 0 (the reference), EMEA −2%, Pacific −2.6%, China −17%. The China figure started at the −13% drop measured across 32 Chinese players with international maps, and was raised after Chinese teams again underperformed at Champions Shanghai.</p>
-        <p>International stats are not adjusted. Card backs show raw VLR numbers.</p>
+        <p>≥ 60% agent usage in one role → that role, else FLEX. Viper = SENTI. Chamber = ½ DUEL, ½ SENTI. Hand fixes: Neon FLEX · Sato, spike DUEL · kiNgg, erde CTRL.</p>
       </div>
       <div>
-        <h3>IGLs</h3>
-        <p>IGLs get a bonus from about +1 to +3 OVR. Everyone gets some credit for shotcalling. More goes to IGLs whose teams finished better than their players' individual stats predicted (Rb, erde and f0rsakeN are at the top). Teams that underperformed their talent get the minimum.</p>
-        <p>The IGL list is from roster trackers and may miss mid-season changes.</p>
+        <h3>Event weights</h3>
+        <ul class="weights"><li>Kickoff<b>1</b></li><li>Stage 1<b>1.5</b></li><li>Stage 2<b>2</b></li><li>Santiago<b>3</b></li><li>London<b>3.5</b></li><li>Shanghai<b>4</b></li></ul>
+        <pre class="f">Stat = Σ(w·rounds·stat) ÷ Σ(w·rounds)
+Team = Σ(w·pts) ÷ Σ w</pre>
+        <table class="ft">
+          <tr><th>Place</th><td>1st</td><td>2nd</td><td>3rd</td><td>4th</td><td>5–6</td><td>7–8</td><td>9–12</td><td>else</td></tr>
+          <tr><th>Pts</th><td>10</td><td>7</td><td>5</td><td>4</td><td>3</td><td>2</td><td>1</td><td>0.5</td></tr>
+        </table>
+        <p>Missed Masters/Champions: adds 0.5·w to Σ w.</p>
+        <h3>Region (league stats only)</h3>
+        <ul class="weights"><li>Americas<b>0%</b></li><li>EMEA<b>−2.1%</b></li><li>Pacific<b>−2.6%</b></li><li>China<b>−17%</b></li></ul>
+        <p>Applied to R, ACS, K/D, KPR, ADR in Kickoff and Stages. Internationals and card backs: raw VLR.</p>
         <h3>Special cards</h3>
-        <p>Winner cards (Masters, Champions) are 75% that event's performance and 25% season OVR, plus +5 for winning Champions or +3 for winning Masters. The event part uses the same formula, fed only with that event's stats and placement. Every winning run is shrunk toward average by the same amount, so a team that wins in fewer maps is not marked down for a smaller sample. MVP cards use the same winner formula plus a +6 MVP bonus, which takes every 2026 MVP to 99.</p>
-        <h3>Coaches</h3>
-        <p>Coach cards show each head coach's team record. Coaches aren't rated, since there's no coach-level data to rate them on.</p>
-        <h3>2027 rosters</h3>
-        <p>The 2027 section shows offseason rosters from vlr.gg team pages and transfer reports. Ratings are carried over from 2026. Players with no VCT stats are shown as new and unrated.</p>
-        <p>Returning players without 2026 VCT league games are rated from their 2024–25 VCT stats with the same formula, a neutral team score, and a discount for older data (x0.85 if they last played in 2025, x0.5 if 2024). Their cards say which years the stats come from.</p>
-        <p>2026 games for play-in and qualifier teams count too, discounted 8% for the weaker field and shrunk harder toward average for small samples.</p>
-        <h3>Tags</h3>
-        <p>Rookie means no VCT partner-league or international maps in 2024 or 2025. Dropped players were replaced during the season (including a sixth man who lost his spot in the final event) and are hidden unless you turn them on.</p>
-        <h3>Tiers</h3>
-        <p>Card colour follows OVR: 90+, 80+, 70+ and 60+ each have their own finish.</p>
+        <pre class="f">Winner = 0.75·Event + 0.25·Season + boost
+Event  = OVR on event stats, k = 0.6
+MVP    = Winner + 6        (max 99)</pre>
+        <ul class="weights"><li>Champions<b>+5</b></li><li>Masters<b>+3</b></li><li>MVP<b>+6</b></li></ul>
       </div>
       <div>
         <h3>Attributes</h3>
-        <dl>
-          <dt>FIRE</dt><dd>K:D and kills per round. No headshot %, so Operator players are not penalised.</dd>
-          <dt>ENTRY</dt><dd>First-kill rate and FK:FD</dd>
-          <dt>IMPACT</dt><dd>Damage per round (ADR)</dd>
-          <dt>CLUTCH</dt><dd>Clutch %</dd>
-          <dt>UTIL</dt><dd>Assists per round</dd>
-          <dt>CONSIST</dt><dd>KAST</dd>
-        </dl>
-        <p style="margin-top:12px">Each attribute is scored against every VCT player: 71 is average and about 13 points is one standard deviation. Near the ends it bends like OVR, so 99 is only for the very best and nothing drops below 40. Winner cards use 75% that event and 25% the season, plus a small boost.</p>
-        <p style="margin-top:12px">Stats from vlr.gg event pages.</p>
+        <table class="ft">
+          <tr><td>FIRE</td><td>40 + 50·(KD − 0.7) + 60·(KPR − 0.5)</td></tr>
+          <tr><td>ENTRY</td><td>30 + 2.5·FK + 20·(FK÷FD − 1)</td></tr>
+          <tr><td>IMPACT</td><td>40 + (ADR − 100)</td></tr>
+          <tr><td>CLUTCH</td><td>40 + 2.2·CL%</td></tr>
+          <tr><td>UTIL</td><td>30 + 150·APR</td></tr>
+          <tr><td>CONSIST</td><td>30 + 3·(KAST − 60)</td></tr>
+        </table>
+        <pre class="f">Face = 71 + 13·z + boost
+z    = (raw − pool avg) ÷ pool SD</pre>
+        <p>Above 93: 93 + 7·tanh((x − 93) ÷ 7), max <b>99</b>. Below 50 bends to min <b>40</b>. Winner raw = 0.75·event + 0.25·season. Boost: Masters +3, Champions +4, MVP +6.</p>
+        <h3>2027</h3>
+        <p>2026 ratings carry over. No 2026 league games → 2024–25 stats × 0.85 (2025) or × 0.5 (2024), neutral team. Challengers/qualifier stats × 0.92. No VCT stats → unrated.</p>
+        <h3>Tags · Tiers · Coaches</h3>
+        <p>Rookie: no VCT maps in 2024–25. Dropped: replaced mid-season (hidden by default). Tiers: 90+ / 80+ / 70+ / 60+. Coaches: record only, unrated.</p>
+        <p>Data: vlr.gg event pages.</p>
       </div>
     </div>
   </details>
