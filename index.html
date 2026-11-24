@@ -840,11 +840,11 @@ function downscale(file, maxH, maxW){
   });
 }
 /* ---------- photos: shared ones come from the owner, a visitor's own photo stays in their browser ---------- */
-const shared = {db: {}, man: {}};            /* pid -> url; the artifact db wins over the static manifest */
+const shared = {db: {}, man: {}, hide: {}};            /* pid -> url; the artifact db wins over the static manifest */
 const cloud = {db: null, assets: null};
 const cloudIds = {};
 let isOwner = false;
-const sharedOf = pid => shared.db[pid] || shared.man[pid] || null;
+const sharedOf = pid => shared.db[pid] || (shared.hide[pid] ? null : shared.man[pid]) || null;
 const photoOf = pid => store.get(pid) || sharedOf(pid);
 const REPO_ISSUES = "https://github.com/omofkmg/valcards/issues/new";
 function suggestURL(c){
@@ -852,17 +852,17 @@ function suggestURL(c){
     "&body=" + encodeURIComponent(`Player: ${c.ign}\nTeam: ${c.team}\nCard: ${c.id}\nvlr id: ${c.pid}\nPhoto key: ${pkey(c)}\n\nDrag the photo into this box, then submit.`) + "&labels=photo-suggestion";
 }
 /* ---------- team logos: added by the owner, read by everyone ---------- */
-const logos = {db: {}, man: {}}, logoIds = {};
-const logoOf = tag => logos.db[tag] || logos.man[tag] || null;
+const logos = {db: {}, man: {}, hide: {}}, logoIds = {};
+const logoOf = tag => logos.db[tag] || (logos.hide[tag] ? null : logos.man[tag]) || null;
 const logoImg = (tag, cls) => { const u = logoOf(tag); return u ? `<img class="${cls}" src="${esc(u)}" alt="${esc(tag)}" draggable="false">` : ""; };
 const tagHTML = c => `<span class="tag" data-tm="${esc(c.team)}" title="${esc(c.team_full)}">${logoImg(c.team, "lg") || esc(c.team)}</span>`;
 const headLogo = tag => `<span class="t-logo" data-teamlogo="${esc(tag)}">${logoImg(tag, "lgh")}</span>`;
-const logoCtl = tag => `<span class="lg-ctl"><button type="button" data-logo="${esc(tag)}">${logoOf(tag) ? "Change logo" : "Add logo"}</button><button type="button" data-logorm="${esc(tag)}"${logos.db[tag] ? "" : " hidden"}>Remove logo</button></span>`;
+const logoCtl = tag => `<span class="lg-ctl"><button type="button" data-logo="${esc(tag)}">${logoOf(tag) ? "Change logo" : "Add logo"}</button><button type="button" data-logorm="${esc(tag)}"${logoOf(tag) ? "" : " hidden"}>Remove logo</button></span>`;
 function showLogo(tag){
   $$("[data-tm]").forEach(el => { if (el.dataset.tm === tag) el.innerHTML = logoImg(tag, "lg") || esc(tag); });
   $$("[data-teamlogo]").forEach(el => { if (el.dataset.teamlogo === tag) el.innerHTML = logoImg(tag, "lgh"); });
   $$("[data-logo]").forEach(el => { if (el.dataset.logo === tag) el.textContent = logoOf(tag) ? "Change logo" : "Add logo"; });
-  $$("[data-logorm]").forEach(el => { if (el.dataset.logorm === tag) el.hidden = !logos.db[tag]; });
+  $$("[data-logorm]").forEach(el => { if (el.dataset.logorm === tag) el.hidden = !logoOf(tag); });
 }
 function showAllLogos(){ new Set($$("[data-tm]").map(e => e.dataset.tm).concat($$("[data-teamlogo]").map(e => e.dataset.teamlogo))).forEach(showLogo); }
 async function addLogo(tag, file){
@@ -877,9 +877,11 @@ async function addLogo(tag, file){
   } catch(e){ toast(e && e.message && /image/.test(e.message) ? e.message : "Could not save that logo."); }
 }
 async function removeLogo(tag){
-  if (!isOwner || !cloud.db || !logos.db[tag]) return;
-  const id = logoIds[tag]; delete logoIds[tag]; delete logos.db[tag]; showLogo(tag);
-  try { await cloud.db.doc("logos/" + tag).delete(); } catch(e){}
+  if (!isOwner || !cloud.db || !logoOf(tag)) return;
+  const id = logoIds[tag]; delete logoIds[tag]; delete logos.db[tag];
+  if (logos.man[tag]) logos.hide[tag] = true;
+  showLogo(tag);
+  try { if (logos.man[tag]) await cloud.db.doc("logos/" + tag).set({hidden: true}); else await cloud.db.doc("logos/" + tag).delete(); } catch(e){}
   try { if (cloud.assets && id) await cloud.assets.delete(id); } catch(e){}
   toast("Logo removed.");
 }
@@ -888,7 +890,7 @@ async function removeLogo(tag){
 const pkey = c => c._sp ? c.id : c.pid;
 function photoHTML(c){
   const k = pkey(c), local = store.get(k), url = local || sharedOf(k);
-  return `<div class="photo${url ? " has-img" : ""}${local ? " is-local" : ""}${local || (isOwner && shared.db[k]) ? " can-rm" : ""}" data-pid="${esc(k)}">
+  return `<div class="photo${url ? " has-img" : ""}${local ? " is-local" : ""}${local || (isOwner && sharedOf(k)) ? " can-rm" : ""}" data-pid="${esc(k)}">
       <div class="ph-empty">${SILHOUETTE}<b>Drop photo</b><small>or click, or paste</small></div>
       <img alt="" draggable="false"${url ? ` src="${esc(url)}"` : ""}>
       <button type="button" class="ph-pick" aria-label="Add a photo for ${esc(c.ign)}"></button>
@@ -903,7 +905,7 @@ function showPhoto(pid){
     const img = $("img", slot);
     if (url){ if (img.getAttribute("src") !== url) img.src = url; } else img.removeAttribute("src");
     slot.classList.toggle("has-img", !!url); slot.classList.toggle("is-local", !!local);
-    slot.classList.toggle("can-rm", !!(local || (isOwner && shared.db[pid])));
+    slot.classList.toggle("can-rm", !!(local || (isOwner && sharedOf(pid))));
   });
 }
 function showAllPhotos(){ new Set($$(".photo").map(s => s.dataset.pid)).forEach(showPhoto); }
@@ -943,19 +945,22 @@ function dataURLtoBlob(u){
     db.collection("photos").onSnapshot(snap => {
       snap.docChanges().forEach(ch => {
         const pid = ch.doc.id;
-        if (ch.type === "removed"){ delete cloudIds[pid]; delete shared.db[pid]; showPhoto(pid); return; }
+        if (ch.type === "removed"){ delete cloudIds[pid]; delete shared.db[pid]; delete shared.hide[pid]; showPhoto(pid); return; }
         const d = ch.doc.data() || {};
+        if (d.hidden){ delete cloudIds[pid]; delete shared.db[pid]; shared.hide[pid] = true; showPhoto(pid); return; }
         const url = d.url || (d.id ? "/_blob/" + d.id : null);
-        if (url){ cloudIds[pid] = d.id; shared.db[pid] = url; showPhoto(pid); }
+        if (url){ cloudIds[pid] = d.id; shared.db[pid] = url; delete shared.hide[pid]; showPhoto(pid); }
       });
     }, () => {});
     try {
       db.collection("logos").onSnapshot(snap => {
         snap.docChanges().forEach(ch => {
           const tag = ch.doc.id;
-          if (ch.type === "removed"){ delete logoIds[tag]; delete logos.db[tag]; showLogo(tag); return; }
-          const d = ch.doc.data() || {}, url = d.url || (d.id ? "/_blob/" + d.id : null);
-          if (url){ logoIds[tag] = d.id; logos.db[tag] = url; showLogo(tag); }
+          if (ch.type === "removed"){ delete logoIds[tag]; delete logos.db[tag]; delete logos.hide[tag]; showLogo(tag); return; }
+          const d = ch.doc.data() || {};
+          if (d.hidden){ delete logoIds[tag]; delete logos.db[tag]; logos.hide[tag] = true; showLogo(tag); return; }
+          const url = d.url || (d.id ? "/_blob/" + d.id : null);
+          if (url){ logoIds[tag] = d.id; logos.db[tag] = url; delete logos.hide[tag]; showLogo(tag); }
         });
       }, () => {});
     } catch(e){}
@@ -968,7 +973,7 @@ async function saveCloud(pid, data){
     const up = await cloud.assets.upload(dataURLtoBlob(data));
     const old = cloudIds[pid];
     await cloud.db.doc("photos/" + pid).set({id: up.id, url: up.url});
-    cloudIds[pid] = up.id; shared.db[pid] = up.url;
+    cloudIds[pid] = up.id; shared.db[pid] = up.url; delete shared.hide[pid];
     if (old && old !== up.id){ try { await cloud.assets.delete(old); } catch(e){} }
     return true;
   } catch(e){ return false; }
@@ -979,10 +984,18 @@ async function removePhoto(pid){
     return toast(sharedOf(pid) ? "Your photo is removed. The site's photo is back." : "Your photo is removed.");
   }
   if (isOwner && cloud.db && shared.db[pid]){
-    const id = cloudIds[pid]; delete cloudIds[pid]; delete shared.db[pid]; showPhoto(pid);
-    try { await cloud.db.doc("photos/" + pid).delete(); } catch(e){}
+    const id = cloudIds[pid]; delete cloudIds[pid]; delete shared.db[pid];
+    /* if the static list also has a photo for this card, hide it too so the card ends up blank */
+    if (shared.man[pid]) shared.hide[pid] = true;
+    showPhoto(pid);
+    try { if (shared.man[pid]) await cloud.db.doc("photos/" + pid).set({hidden: true}); else await cloud.db.doc("photos/" + pid).delete(); } catch(e){}
     try { if (cloud.assets && id) await cloud.assets.delete(id); } catch(e){}
-    toast("Photo removed for everyone.");
+    return toast("Photo removed for everyone.");
+  }
+  if (isOwner && cloud.db && shared.man[pid] && !shared.hide[pid]){
+    shared.hide[pid] = true; showPhoto(pid);
+    try { await cloud.db.doc("photos/" + pid).set({hidden: true}); toast("Photo removed for everyone."); }
+    catch(e){ delete shared.hide[pid]; showPhoto(pid); toast("Could not remove that photo."); }
   }
 }
 function addPhoto(pid, file){
