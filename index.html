@@ -153,6 +153,14 @@ details.how[open] summary::before{transform:rotate(45deg)}
 .photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 100%;display:none;
   -webkit-mask-image:linear-gradient(#000 0 62%,transparent 97%);mask-image:linear-gradient(#000 0 62%,transparent 97%)}
 .photo.has-img img{display:block}
+/* regular cards: show the whole cutout (no clipped heads), sitting on the bottom with a little headroom; special-card photos keep cover */
+.front:not(.t-mvp):not(.t-masters):not(.t-champions) .photo img{box-sizing:border-box;padding-top:3.5%;object-fit:contain;object-position:center bottom}
+/* refreshed trophy photos on special cards: anchor higher so heads above the trophy are not cut off */
+.front:is(.t-mvp,.t-masters,.t-champions) .photo img[src^="photos/refresh-"]{object-position:center 15%}
+/* Nongshim Santiago special photos: per-photo framing (same specificity as the rule above, so these win by order) */
+.front:is(.t-mvp,.t-masters,.t-champions) .photo img[src="photos/refresh-ns-santiago-dambi-mvp.webp"]{object-position:center top}
+/* NS solo trophy shots: trophy sits low, so start the fade later on these two assets only */
+.photo img:is([src="photos/refresh-ns-solo-francis-masters.webp"],[src="photos/refresh-ns-solo-rb-masters.webp"]){-webkit-mask-image:linear-gradient(#000 0 82%,transparent 100%);mask-image:linear-gradient(#000 0 82%,transparent 100%)}
 .photo.has-img .ph-empty{display:none}
 .ph-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:17cqw;color:var(--c-ink);text-align:center}
 .ph-empty svg{position:absolute;left:21%;width:70%;bottom:11%;height:auto;opacity:.17}
@@ -844,7 +852,20 @@ const shared = {db: {}, man: {}, hide: {}};            /* pid -> url; the artifa
 const cloud = {db: null, assets: null};
 const cloudIds = {};
 let isOwner = false;
-const sharedOf = pid => shared.db[pid] || (shared.hide[pid] ? null : shared.man[pid]) || null;
+/* A hide flag is {hidden:true, path}. Legacy flags (no path) keep hiding the static photo they were set on,
+   but not a newly approved refresh (photos/refresh-...). A flag with a path only hides that exact file,
+   so a later replacement shows until the owner removes it too. */
+const manHidden = pid => {
+  const h = shared.hide[pid], m = shared.man[pid];
+  if (!h || !m) return false;
+  if (h === true) return !m.startsWith("photos/refresh-");
+  return h === m;
+};
+/* Owner-approved refreshes that replace a specific earlier upload. The refresh wins only while that exact
+   upload is still the one in the database; any new owner upload (a different id) wins again. */
+const REFRESH_OVER = {"ivy-masters": "c21a545eec7aca263d905f8f11722815", "lukxo-champions": "cb7f463a891e435d87563766f6bdde53", "kingg-masters": "c75c889b1a52539f172dac0d45dc1836", "blowz-masters": "deacd58b72f3ed1d36a190e314b32a9a", "sato-masters": "1e2eef6dffbedb034a3ed039448b0643", "neon-mvp": "b295a1eba7378a89249d6511b16fa87c", "spike-masters": "25a1a2aef6e6994892ee7cf329d7ff2a", "50025": "84469e02b9d92c53f738299231f8c538", "54487": "96b360cec354da032e12936a7a8d5d06", "c1030": "e1656c7a20ac040f205423d342cfc507"};
+const dbWins = pid => !!shared.db[pid] && !(REFRESH_OVER[pid] && REFRESH_OVER[pid] === cloudIds[pid] && (shared.man[pid] || "").startsWith("photos/refresh-"));
+const sharedOf = pid => (dbWins(pid) ? shared.db[pid] : null) || (manHidden(pid) ? null : shared.man[pid]) || null;
 const photoOf = pid => store.get(pid) || sharedOf(pid);
 const REPO_ISSUES = "https://github.com/omofkmg/valcards/issues/new";
 function suggestURL(c){
@@ -947,7 +968,7 @@ function dataURLtoBlob(u){
         const pid = ch.doc.id;
         if (ch.type === "removed"){ delete cloudIds[pid]; delete shared.db[pid]; delete shared.hide[pid]; showPhoto(pid); return; }
         const d = ch.doc.data() || {};
-        if (d.hidden){ delete cloudIds[pid]; delete shared.db[pid]; shared.hide[pid] = true; showPhoto(pid); return; }
+        if (d.hidden){ delete cloudIds[pid]; delete shared.db[pid]; shared.hide[pid] = (typeof d.path === "string" && d.path) ? d.path : true; showPhoto(pid); return; }
         const url = d.url || (d.id ? "/_blob/" + d.id : null);
         if (url){ cloudIds[pid] = d.id; shared.db[pid] = url; delete shared.hide[pid]; showPhoto(pid); }
       });
@@ -983,19 +1004,23 @@ async function removePhoto(pid){
     store.del(pid); showPhoto(pid);
     return toast(sharedOf(pid) ? "Your photo is removed. The site's photo is back." : "Your photo is removed.");
   }
-  if (isOwner && cloud.db && shared.db[pid]){
+  if (isOwner && cloud.db && dbWins(pid)){
     const id = cloudIds[pid]; delete cloudIds[pid]; delete shared.db[pid];
-    /* if the static list also has a photo for this card, hide it too so the card ends up blank */
-    if (shared.man[pid]) shared.hide[pid] = true;
+    /* if the static list also has a photo for this card, hide that exact file too so the card ends up blank */
+    const m = shared.man[pid];
+    if (m) shared.hide[pid] = m;
     showPhoto(pid);
-    try { if (shared.man[pid]) await cloud.db.doc("photos/" + pid).set({hidden: true}); else await cloud.db.doc("photos/" + pid).delete(); } catch(e){}
+    try { if (m) await cloud.db.doc("photos/" + pid).set({hidden: true, path: m}); else await cloud.db.doc("photos/" + pid).delete(); } catch(e){}
     try { if (cloud.assets && id) await cloud.assets.delete(id); } catch(e){}
     return toast("Photo removed for everyone.");
   }
-  if (isOwner && cloud.db && shared.man[pid] && !shared.hide[pid]){
-    shared.hide[pid] = true; showPhoto(pid);
-    try { await cloud.db.doc("photos/" + pid).set({hidden: true}); toast("Photo removed for everyone."); }
-    catch(e){ delete shared.hide[pid]; showPhoto(pid); toast("Could not remove that photo."); }
+  if (isOwner && cloud.db && shared.man[pid] && !manHidden(pid)){
+    const m = shared.man[pid], was = shared.hide[pid];
+    /* the old upload under a refresh is left in place, untouched; the hide flag replaces the doc */
+    delete shared.db[pid]; delete cloudIds[pid];
+    shared.hide[pid] = m; showPhoto(pid);
+    try { await cloud.db.doc("photos/" + pid).set({hidden: true, path: m}); toast("Photo removed for everyone."); }
+    catch(e){ if (was) shared.hide[pid] = was; else delete shared.hide[pid]; showPhoto(pid); toast("Could not remove that photo."); }
   }
 }
 function addPhoto(pid, file){
